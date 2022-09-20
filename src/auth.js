@@ -3,6 +3,7 @@ import connect from './db.js';
 import bcrypt from 'bcrypt';
 import jwt from 'jsonwebtoken';
 
+//pri pokretanju apli kreira se indeks5
 (async () => {
     let db = await connect();
     db.collection('users').createIndex({ username: 1 }, { unique: true });
@@ -64,7 +65,6 @@ export default {
                     return res.status(401).send(); 
                 } else {
                     let token = authorization[1];
-
                     req.jwt = jwt.verify(authorization[1], process.env.JWT_SECRET);
                     return next();
                 }
