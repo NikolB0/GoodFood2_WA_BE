@@ -246,17 +246,6 @@ app.delete('/upit/:id', [auth.verify], async (req, res) => {
 
 })
 
-app.post('/comments', [auth.verify], async (req, res) => {
-    let db = await connect();
-    let doc = req.body;
-
-
-
-    let result = await db.collection('komentari').insertOne(doc);
-
-    res.json(doc);
-});
-
 app.delete('/oglasi/:id', [auth.verify], async (req, res) => {
     let db = await connect();
     let id = req.params.id;
@@ -270,9 +259,9 @@ app.delete('/comments/:id', [auth.verify], async (req, res) => {
     let db = await connect();
     let id = req.params.id;
 
-    let result = await db.collection('komentari').deleteOne(
+    let result = await db.collection('comments').deleteOne(
         { _id: mongo.ObjectId(id) })
-
+    res.sendStatus(200);
 });
 
 
@@ -317,7 +306,7 @@ app.get('/comments/:id', [auth.verify], async (req, res) => {
     let id = (req.params.id).trim();
 
 
-    let cursor = await db.collection("komentari").find({ oglasid: id })
+    let cursor = await db.collection("komentari").find({ postId: id })
     let results = await cursor.toArray()
     res.json(results)
 
@@ -340,12 +329,24 @@ app.post('/posts', async (req, res) => {
     res.json(result) // vrati podatke za referencu
 })
 
-
 app.get('/selectedrecipe/:id', [auth.verify], async (req, res) => {
     let id = req.params.id;
     let db = await connect();
 
-    let doc = await db.collection('posts').findOne({ _id: mongo.ObjectId(id) });
+    let post = await db.collection('posts').findOne({ _id: mongo.ObjectId(id) });
+    let commentsCursor = await db.collection("comments").find({ postId: id })
+    let comments = await commentsCursor.toArray();
+    console.log(comments)
+    post.comments = comments;
+    res.json(post);
+});
+
+app.post('/comments', [auth.verify], async (req, res) => {
+    let db = await connect();
+    let doc = req.body;
+    doc.posted_at = new Date(Date.now());
+    let result = await db.collection('comments').insertOne(doc);
+
     res.json(doc);
 });
 
