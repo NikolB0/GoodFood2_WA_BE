@@ -62,13 +62,6 @@
 //     }
 // });
 
-// app.get('/posts', [auth.verify], async (req, res) => {
-//     let db = await connect() 
-//     let cursor = await db.collection("recipes").find().sort({postedAt: -1})
-//     let results = await cursor.toArray()
-//     res.json(results)
-//    })
-
 
 // app.get("/posts", (req,res) => {
 //     let posts = storage.posts;
@@ -140,7 +133,7 @@
 // // app.get('/comments/:id', [auth.verify], async (req, res) => {
 // //     let db = await connect() 
 // //     let id = (req.params.id).trim();       
-    
+
 // //     let cursor = await db.collection("comments").find({oglasid: id})
 // //     let results = await cursor.toArray()
 // //     res.json(results)    
@@ -150,16 +143,17 @@
 // // app.listen(port, () => console.log(`Listening on port ${port}`)) //intrtpolacija stringa u js ${sa backtick navodnicima!!!!!!!!!!!!}
 
 
-import * as dotenv  from 'dotenv';
+import * as dotenv from 'dotenv';
 dotenv.config()
 import express from 'express';
 import connect from './db.js'
 import cors from "cors"
 import mongo from 'mongodb';
 import auth from './auth.js';
+import db from './db.js';
 
-const app = express() 
-const port =  3001
+const app = express()
+const port = 3001
 app.use(cors())
 app.use(express.json());
 
@@ -170,13 +164,17 @@ app.get('/tajna', [auth.verify], async (req, res) => {
 
 app.post('/auth', async (req, res) => {
     let user = req.body;
+    console.log(user);
     let username = user.username;
     let password = user.password;
 
     try {
         let result = await auth.authenticateUser(username, password);
+        console.log("drek")
         res.status(201).json(result);
     } catch (e) {
+        console.log(e)
+
         res.status(500).json({
             error: e.message,
         });
@@ -194,7 +192,7 @@ app.post('/user', async (req, res) => {
             error: e.message,
         });
     }
-    
+
 });
 
 
@@ -225,7 +223,7 @@ app.delete('/poruke/:id', [auth.verify], async (req, res) => {
     let id = req.params.id;
 
     let result = await db.collection('poruke').deleteMany(
-        { artikalid: id})
+        { artikalid: id })
 
 })
 
@@ -248,7 +246,7 @@ app.delete('/upit/:id', [auth.verify], async (req, res) => {
 
 })
 
-app.post('/comments', [auth.verify],  async (req, res) => {
+app.post('/comments', [auth.verify], async (req, res) => {
     let db = await connect();
     let doc = req.body;
 
@@ -279,50 +277,76 @@ app.delete('/comments/:id', [auth.verify], async (req, res) => {
 
 
 app.get('/oglasi', [auth.verify], async (req, res) => {
-    let db = await connect() 
+    let db = await connect()
     let cursor = await db.collection("oglasi").find()
     let results = await cursor.toArray()
     res.json(results)
-   })
+})
 
 
-app.get('/oglas/:id', [auth.verify],  async (req, res) => {
+app.get('/oglas/:id', [auth.verify], async (req, res) => {
     let id = (req.params.id).trim();
     let db = await connect();
-    let document = await db.collection('oglasi').findOne({_id: new mongo.ObjectID(id)});
+    let document = await db.collection('oglasi').findOne({ _id: new mongo.ObjectID(id) });
 
     res.json(document);
 });
 
 app.get('/upit', [auth.verify], async (req, res) => {
-    let db = await connect() 
+    let db = await connect()
     let query = req.query
-    let cursor = await db.collection("upiti").find({ $or: [ { by: query.by } , { to: query.to} ]})
+    let cursor = await db.collection("upiti").find({ $or: [{ by: query.by }, { to: query.to }] })
     let results = await cursor.toArray()
     res.json(results)
     console.log(query.by)
     console.log(query.to)
-   })
+})
 
+app.get('/posts', [auth.verify], async (req, res) => {
+    let db = await connect()
+    let drek = await db.collection("posts");
+    // console.log(drek);
+    // console.log(drek.toArray())
+    let cursor = await db.collection("posts").find().sort({ postedAt: -1 })
+    let results = await cursor.toArray()
+    res.json(results)
+})
 
 app.get('/comments/:id', [auth.verify], async (req, res) => {
-let db = await connect() 
-let id = (req.params.id).trim();
-   
+    let db = await connect()
+    let id = (req.params.id).trim();
 
-let cursor = await db.collection("komentari").find({oglasid: id})
-let results = await cursor.toArray()
-res.json(results)
+
+    let cursor = await db.collection("komentari").find({ oglasid: id })
+    let results = await cursor.toArray()
+    res.json(results)
 
 })
 
 app.get('/poruke/:id', [auth.verify], async (req, res) => {
-    let db = await connect() 
+    let db = await connect()
     let id = (req.params.id).trim();
-    let query = req.query  
-    let cursor = await db.collection("poruke").find({artikalid: id, $and: [ {$or:[ { querysender: query.querysender } , { itemowner: query.itemowner}]}, {$or:[ { querysender: query.querysender2 } , { itemowner: query.itemowner2}]}] })
+    let query = req.query
+    let cursor = await db.collection("poruke").find({ artikalid: id, $and: [{ $or: [{ querysender: query.querysender }, { itemowner: query.itemowner }] }, { $or: [{ querysender: query.querysender2 }, { itemowner: query.itemowner2 }] }] })
     let results = await cursor.toArray()
     res.json(results)
-    })
+})
+app.post('/posts', async (req, res) => {
+    let data = req.body
+
+    let db = await connect();
+    let result = await db.collection("posts").insertOne(data);
+    data.id = 1 + db.collection("posts").count();
+    res.json(result) // vrati podatke za referencu
+})
+
+
+app.get('/selectedrecipe/:id', [auth.verify], async (req, res) => {
+    let id = req.params.id;
+    let db = await connect();
+
+    let doc = await db.collection('posts').findOne({ _id: mongo.ObjectId(id) });
+    res.json(doc);
+});
 
 app.listen(port, () => console.log(`Slušam na portu ${port}!`))

@@ -40,9 +40,8 @@ export default {
     async authenticateUser(username, password) {
         let db = await connect();
         let user = await db.collection('users').findOne({ username: username });
-
         if (user && user.password && (await bcrypt.compare(password, user.password))) {
-            delete user.password; 
+            delete user.password;
             let token = jwt.sign(user, process.env.JWT_SECRET, {
                 algorithm: 'HS512',
                 expiresIn: '1 week',
@@ -62,17 +61,17 @@ export default {
             try {
                 let authorization = req.headers['authorization'].split(' ');
                 if (authorization[0] !== 'Bearer') {
-                    return res.status(401).send(); 
+                    return res.status(401).send();
                 } else {
                     let token = authorization[1];
                     req.jwt = jwt.verify(authorization[1], process.env.JWT_SECRET);
                     return next();
                 }
             } catch (err) {
-                return res.status(401).send(); 
+                return res.status(401).send();
             }
         } else {
-            return res.status(401).send(); 
+            return res.status(401).send();
         }
     },
 };
